@@ -12,23 +12,21 @@ private:
 
 	//перемещение файла
 	void move_file(std::string filname, std::string name) {
-		const char * from, *to;
-		from = filname.c_str();
+		const char * current, *new_;
+		current = filname.c_str();
 		name = "C:\\Users\\Asus\\Desktop\\carantin\\" + name;
-		to = name.c_str();
-		rename(from, to); //на винде перемещение = переименовывание
+		new_ = name.c_str();
+		rename(current, new_); //на винде перемещение = переименовывание
 	}
 
 	//проверка директории (в качестве аргумента задается любая директория, это просто для примера)
-	void checking_dyrectory(const path & checking = "C:\\Users\\Asus\\Desktop\\kurs" ) {
-		path name_of_directory = checking;
+	void checking_dyrectory(const path & name_of_directory) {
 		for (const directory_entry& x : directory_iterator{ name_of_directory }) {
 			if ( is_directory( x.path() ) ) {
 				checking_dyrectory( x.path() );
 			}
 			else {
-				std::string name = x.path().stem().generic_string(), extension = x.path().extension().generic_string();
-				if (extension == ".exe" && name.find("3") != std::string::npos) {
+				if (x.path().extension().generic_string(); == ".exe") {
 					if (is_dangerous(x.path().generic_string())) {
 						move_file(x.path().generic_string(), x.path().filename().generic_string());
 					}
@@ -63,15 +61,17 @@ private:
 
 public:
 
-	void scan_filesystem() {
-		checking_dyrectory();
+	void scan_filesystem(std::string name_of_directory) {
+		path dyrectory(name_of_directory);
+		checking_dyrectory(dyrectory);
 	}
 
 };
 
 int main()
 {
+	std::string str = "";
 	antivirus_scaner scaner;
-	scaner.scan_filesystem();
+	scaner.scan_filesystem(str);
 	return 0;
 }
