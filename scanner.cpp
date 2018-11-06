@@ -10,14 +10,16 @@ using namespace std::filesystem;
 class antivirus_scaner {
 private:
 
+	//перемещение файла
 	void move_file(std::string filname, std::string name) {
 		const char * from, *to;
 		from = filname.c_str();
 		name = "C:\\Users\\Asus\\Desktop\\carantin\\" + name;
 		to = name.c_str();
-		rename(from, to);
+		rename(from, to); //на винде перемещение = переименовывание
 	}
 
+	//проверка директории (в качестве аргумента задается любая директория, это просто для примера)
 	void checking_dyrectory(const path & checking = "C:\\Users\\Asus\\Desktop\\kurs" ) {
 		path name_of_directory = checking;
 		for (const directory_entry& x : directory_iterator{ name_of_directory }) {
@@ -35,20 +37,12 @@ private:
 		}
 	}
 
+	//поиск вредоносной подпоследовательности алгоритмом
 	bool checking_file(const char * buf, int length) {
-		//поиск вредоносной подпоследовательности
-
-		std::string str = "is_dangerous";
-		const char * b = str.c_str();
-
-		for (auto i = 0; i < length; ++i) {
-			if (b[i] == buf[i])
-				if (i == length - 1)
-					return true;
-		}
-		return false;
+		
 	}
 
+	//проверка, является ли файл зараженным
 	bool is_dangerous(std::string name) {
 		bool succsess = false;
 		std::ifstream ifile(name, std::ofstream::binary);
