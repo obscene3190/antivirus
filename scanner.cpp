@@ -98,7 +98,7 @@ private:
 		HKEY hKey;
 		std::vector< std::pair<std::string, std::string> > strings_of_regitry;
 
-		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_READ, &hKey) == ERROR_SUCCESS)
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
 		{
 			TCHAR lpData[1024] = { 0 };
 			TCHAR data[1024] = { 0 };
