@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <string>
 #include <filesystem>
+#include <windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 using namespace std::filesystem;
 
 class antivirus_scaner {
@@ -46,7 +50,7 @@ private:
 		}
 	}
 
-	bool checking_file(std::string & buf, int length) {
+	bool checking_file(std::string & buf) {
 
 		for (auto i : virus_strings) {
 			if ( buf.find(i) != std::string::npos )
@@ -71,11 +75,86 @@ private:
 			str += buffer[i];
 		}
 
-		succsess = checking_file(str, length);
+		succsess = checking_file(str);
 
 		delete buffer;
 		ifile.close();
 		return succsess;
+	}
+
+	std::wstring to_LPCWSTR(const std::string& s)
+	{
+		int len;
+		int slength = (int)s.length() + 1;
+		len = MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, 0, 0);
+		wchar_t* buf = new wchar_t[len];
+		MultiByteToWideChar(CP_ACP, 0, s.c_str(), slength, buf, len);
+		std::wstring r(buf);
+		delete[] buf;
+		return r;
+	}
+
+	void check_registry() {
+		HKEY hKey;
+		std::vector< std::pair<std::string, std::string> > strings_of_regitry;
+
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_READ, &hKey) == ERROR_SUCCESS)
+		{
+			TCHAR lpData[1024] = { 0 };
+			TCHAR data[1024] = { 0 };
+			std::string str1, str2;
+			DWORD buffersize = sizeof(lpData);
+			DWORD num, MaxValueNameLen;
+
+			RegQueryInfoKey(hKey, NULL, NULL, NULL, NULL, NULL, NULL, &num, &MaxValueNameLen, NULL, NULL, NULL);
+
+			for (DWORD i = 0; i < num; i++) {
+				buffersize = MaxValueNameLen + 1;
+				lpData[0] = '\0';
+				data[0] = '\0';
+				RegEnumValue(hKey, i, lpData, &buffersize, NULL, NULL, NULL, NULL);
+
+				buffersize = 256;
+				RegQueryValueEx(hKey, lpData, NULL, NULL, (LPBYTE)data, &buffersize);
+
+				for (auto i = 0; lpData[i] != '\0'; ++i) {
+					str1 += lpData[i];
+				}
+
+				auto index = 0;
+				if (data[0] == '\"') {
+					index = 1;
+				}
+				while (data[index] != '.' || data[index + 1] != 'e' || data[index + 2] != 'x' || data[index + 3] != 'e') {
+					str2 += data[index++];
+				}
+				str2 += data[index];
+				str2 += data[index + 1];
+				str2 += data[index + 2];
+				str2 += data[index + 3];
+
+				strings_of_regitry.push_back(std::make_pair(str1, str2));
+				str1.clear();
+				str2.clear();
+			}
+		}
+
+		for (auto i : strings_of_regitry) {
+			if (is_dangerous(i.second)) {
+
+				std::wstring stemp1 = to_LPCWSTR(i.first);
+				std::wstring stemp2 = to_LPCWSTR(i.second);
+				LPCWSTR str1 = stemp1.c_str();
+				LPCWSTR str2 = stemp2.c_str();
+
+				RegDeleteValue(hKey, str1);
+				RegDeleteKey(hKey, str2);
+
+				move_file(path(i.second).generic_string(), path(i.second).filename().generic_string());
+			}
+		}
+
+		RegCloseKey(hKey);
 	}
 
 public:
@@ -83,6 +162,7 @@ public:
 	void scan_filesystem() {
 		read_data_of_dangerous_files();
 		checking_dyrectory();
+		check_registry();
 	}
 
 };
