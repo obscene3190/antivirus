@@ -1,4 +1,3 @@
-#include "pch.h"
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -18,7 +17,7 @@ private:
 	void read_data_of_dangerous_files() {
 		std::ifstream fin("C:\\Users\\Asus\\Desktop\\carantin\\data.txt");
 		std::string str;
-		
+
 		while (std::getline(fin, str)) {
 			virus_strings.push_back(str);
 		}
@@ -31,13 +30,14 @@ private:
 		name = "C:\\Users\\Asus\\Desktop\\carantin\\" + name;
 		to = name.c_str();
 		rename(from, to);
+		std::cout << "File has been moved in carantin" << std::endl;
 	}
 
-	void checking_dyrectory(const path & checking = "C:\\Users\\Asus\\Desktop\\kurs" ) {
+	void checking_dyrectory(const path & checking) {
 		path name_of_directory = checking;
 		for (const directory_entry& x : directory_iterator{ name_of_directory }) {
-			if ( is_directory( x.path() ) ) {
-				checking_dyrectory( x.path() );
+			if (is_directory(x.path())) {
+				checking_dyrectory(x.path());
 			}
 			else {
 				std::string name = x.path().stem().generic_string(), extension = x.path().extension().generic_string();
@@ -53,14 +53,19 @@ private:
 	bool checking_file(std::string & buf) {
 
 		for (auto i : virus_strings) {
-			if ( buf.find(i) != std::string::npos )
-					return true;
+			if (buf.find(i) != std::string::npos) {
+				std::cout << "This file is dangerous!" << std::endl;
+				return true;
+			}
 		}
+		std::cout << "No problem with this file" << std::endl;
 		return false;
 	}
 
 	bool is_dangerous(std::string name) {
 		bool succsess = false;
+		std::cout << std::endl << name << " is checking now..." << std::endl;
+
 		std::ifstream ifile(name, std::ofstream::binary);
 
 		ifile.seekg(0, ifile.end);
@@ -96,9 +101,9 @@ private:
 
 	void check_registry() {
 		HKEY hKey;
-		std::vector< std::pair<std::string, std::string> > strings_of_regitry;
+		std::vector< std::pair<std::string, std::string> > strings_of_registry;
 
-		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_READ, &hKey) == ERROR_SUCCESS)
 		{
 			TCHAR lpData[1024] = { 0 };
 			TCHAR data[1024] = { 0 };
@@ -133,13 +138,17 @@ private:
 				str2 += data[index + 2];
 				str2 += data[index + 3];
 
-				strings_of_regitry.push_back(std::make_pair(str1, str2));
+				strings_of_registry.push_back(std::make_pair(str1, str2));
 				str1.clear();
 				str2.clear();
 			}
+			RegCloseKey(hKey);
 		}
 
-		for (auto i : strings_of_regitry) {
+		RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_ALL_ACCESS, &hKey);
+		for (auto i : strings_of_registry) {
+			std::cout << std::endl << "Value: " << i.first << std::endl <<
+				"Key: " << i.second;
 			if (is_dangerous(i.second)) {
 
 				std::wstring stemp1 = to_LPCWSTR(i.first);
@@ -150,6 +159,8 @@ private:
 				RegDeleteValue(hKey, str1);
 				RegDeleteKey(hKey, str2);
 
+				std::cout << "This record has been deleted" << std::endl;
+
 				move_file(path(i.second).generic_string(), path(i.second).filename().generic_string());
 			}
 		}
@@ -159,18 +170,12 @@ private:
 
 public:
 
-	void scan_filesystem() {
+	antivirus_scaner() {
 		read_data_of_dangerous_files();
-		checking_dyrectory();
-		check_registry();
 	}
 
+	void scan_filesystem(std::string str) {
+		checking_dyrectory(str);
+		check_registry();
+	}
 };
-
-int main()
-{
-	antivirus_scaner scaner;
-	scaner.scan_filesystem();
-
-	return 0;
-}
