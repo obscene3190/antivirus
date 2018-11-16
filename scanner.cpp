@@ -64,26 +64,31 @@ private:
 
 	bool is_dangerous(std::string name) {
 		bool succsess = false;
-		std::cout << std::endl << name << " is checking now..." << std::endl;
-
 		std::ifstream ifile(name, std::ofstream::binary);
 
-		ifile.seekg(0, ifile.end);
-		int length = ifile.tellg();
-		ifile.seekg(0, ifile.beg);
-		char * buffer = new char[++length];
-		buffer[length - 1] = '\0';
-		ifile.read((char*)buffer, length);
+		if (ifile.is_open()) {
+			std::cout << std::endl << name << " is checking now..." << std::endl;
 
-		std::string str;
-		for (auto i = 0; i < length; ++i) {
-			str += buffer[i];
+			ifile.seekg(0, ifile.end);
+			int length = ifile.tellg();
+			ifile.seekg(0, ifile.beg);
+			char * buffer = new char[++length];
+			buffer[length - 1] = '\0';
+			ifile.read((char*)buffer, length);
+
+			std::string str;
+			for (auto i = 0; i < length; ++i) {
+				str += buffer[i];
+			}
+
+			succsess = checking_file(str);
+
+			delete buffer;
+			ifile.close();
 		}
-
-		succsess = checking_file(str);
-
-		delete buffer;
-		ifile.close();
+		else {
+			std::cout << std::endl << name << " has been already deleted or does not exist" << std::endl;
+		}
 		return succsess;
 	}
 
@@ -103,7 +108,7 @@ private:
 		HKEY hKey;
 		std::vector< std::pair<std::string, std::string> > strings_of_registry;
 
-		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_READ, &hKey) == ERROR_SUCCESS)
+		if (RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_ALL_ACCESS, &hKey) == ERROR_SUCCESS)
 		{
 			TCHAR lpData[1024] = { 0 };
 			TCHAR data[1024] = { 0 };
@@ -142,10 +147,8 @@ private:
 				str1.clear();
 				str2.clear();
 			}
-			RegCloseKey(hKey);
 		}
 
-		RegOpenKeyEx(HKEY_CURRENT_USER, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Run"), NULL, KEY_ALL_ACCESS, &hKey);
 		for (auto i : strings_of_registry) {
 			std::cout << std::endl << "Value: " << i.first << std::endl <<
 				"Key: " << i.second;
